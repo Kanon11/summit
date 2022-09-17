@@ -1,27 +1,43 @@
-function deposit(amount) {
-    this.balance += amount;
-}
-function withdraw(amount) {
-    if (amount <= this.balance) {
-        this.balance -= amount;
-    }
-    if (amount > this.balance) {
-        console.log('Insufficient funds');
-    }
-}
-function toString() {
-    return `Balance: ${this.balance}`;
-}
-function Checking(amount) {
-    this.balance = amount;
-    this.deposit = deposit;
-    this.withdraw = withdraw;
-    this.toString = toString;
-}
-const account = new Checking(500);
-account.deposit(1000);
-console.log(account.toString()); // Balance: 1500
-account.withdraw(750);
-console.log(account.toString()); // Balance: 750
-account.withdraw(800); // displays "Insufficient funds"
-console.log(account.toString()); //
+const express = require('express');
+const dotenv = require('dotenv');
+const mongoose = require("mongoose");
+const path = require("path");
+const cookieParser = require('cookie-parser');
+const { notFoundHandler, errorHandler } = require("./middlewares/common/errorHandler");
+const loginRout = require("./router/loginRoutes");
+const userRout = require("./router/userRoutes");
+const inboxRout = require("./router/inboxRoutes");
+
+const app = express();
+dotenv.config();
+//database connection
+mongoose.connect(process.env.MONGO_CONNECTION_STRING, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+    .then(() => console.log("connection successfull")).catch(err => console.log(err));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.set("view engine", 'ejs');
+
+app.use(express.static(path.join(__dirname, "public")));
+
+app.use(cookieParser(process.env.COOKIE_SECRETE));
+
+//routing setup
+app.use("/", loginRout);
+app.use("/users", userRout);
+app.use("/inbox", inboxRout);
+
+//error handling
+
+app.use(notFoundHandler);
+
+app.use(errorHandler);
+
+app.listen(process.env.PORT, () => {
+    console.log(`http://localhost:${process.env.PORT}`)
+})
+
